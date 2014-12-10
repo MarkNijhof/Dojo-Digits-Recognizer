@@ -20,20 +20,19 @@ let convertFile path =
   |> Array.map (fun (x:int[]) -> { Label = x.[0]; Pixels = x.[1 ..] })
 
 
-let clasifyImage (image:Image) (images:Image[]) =
+let clasifyImage (image:Image) (images:Image[]) (count:int) =
   images
   |> Array.map (fun (x:Image) -> { Distance = (distance image.Pixels x.Pixels); Sample = image; Match = x } )
   |> Array.sortBy (fun (x:Match) -> x.Distance)
-  |> Seq.truncate 10
+  |> Seq.truncate count
   |> Seq.groupBy (fun (x:Match) -> x.Match.Label)
   |> Seq.maxBy (fun (k,v) -> v |> Seq.length)
   |> (fun (k,v) -> v)
-  |> Seq.toArray
-  |> Array.minBy (fun (x:Match) -> x.Distance)
+  |> Seq.truncate 1
 
-let validate (training:Image[]) (samples:Image[]) =
+let validate (training:Image[]) (samples:Image[]) (count:int) =
   samples
-  |> Array.map (fun (sample:Image) -> clasifyImage sample training)
+  |> Array.map (fun (sample:Image) -> clasifyImage sample training count)
   |> Array.filter (fun (item:Match) -> (item.Sample.Label <> item.Match.Label) )
 
 
@@ -42,6 +41,6 @@ let validation = convertFile validationPath
 
 //clasifyImage validation.[0] training
 
-let faults = validate (training:Image[]) (validation:Image[])
+let faults = validate (training:Image[]) (validation:Image[]) 1
 
 (float 100) - (float (Array.length faults)) / ((float (Array.length validation)) / float 100)
